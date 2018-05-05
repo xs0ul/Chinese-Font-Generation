@@ -53,7 +53,8 @@ patch_h, patch_w = int(opt.img_height / 2**4), int(opt.img_width / 2**4)
 patch = (opt.batch_size, 1, patch_h, patch_w)
 
 # Initialize generator and discriminator
-generator = GeneratorResNet(resblocks=opt.n_residual_blocks) if opt.generator_type == 'resnet' else GeneratorUNet(in_channels=1, out_channels=1)
+generator = GeneratorResNet(in_channels=1, out_channels=1, resblocks=opt.n_residual_blocks) if opt.generator_type == 'resnet' else GeneratorUNet(in_channels=1, out_channels=1)
+#generator = GeneratorUNet(in_channels=1, out_channels=1)
 discriminator = Discriminator(in_channels=1)
 
 if cuda:
@@ -72,7 +73,8 @@ else:
     discriminator.apply(weights_init_normal)
 
 # Loss weight of L1 pixel-wise loss between translated image and real image
-lambda_trans = 500
+lambda_trans = 100
+lambda_const = 15
 
 # Optimizers
 optimizer_G = torch.optim.Adam(generator.parameters(), lr=opt.lr, betas=(opt.b1, opt.b2))
@@ -93,17 +95,21 @@ fake = Variable(Tensor(np.zeros(patch)), requires_grad=False)
 # Dataset loader
 transforms_ = [transforms.ToTensor()]
 
-TRAIN_SIZE = 100
+TRAIN_SIZE = 500
 
-source_font = torch.FloatTensor(np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32))
-target_font = torch.FloatTensor(np.fromfile('../../data/fzjl_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32))
+source_font = torch.FloatTensor(np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32)) * 2. - 1.
+target_font = torch.FloatTensor(np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32)) * 2. - 1.
+
+source_val_sample = torch.FloatTensor(np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[2000:2005].astype(np.float32)) * 2. - 1.
+target_val_sample = torch.FloatTensor(np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[2000:2005].astype(np.float32)) * 2. - 1.
 
 dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
-                        batch_size=opt.batch_size, shuffle=True)
+                        batch_size=opt.batch_size, shuffle=True,
+                        drop_last=True)
 
 
 # Progress logger
-logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval)
+logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample)
 
 # ----------
 #  Training
@@ -123,13 +129,21 @@ for epoch in range(opt.epoch, opt.n_epochs):
         optimizer_G.zero_grad()
 
         # GAN loss
-        fake_A = generator(real_B)
+        if opt.generator_type == 'unet':
+            fake_A, encoded_real_B = generator(real_B, return_encoded=True)
+            _, encoded_fake_A = generator(fake_A, return_encoded=True)
+            loss_const = criterion_translation(encoded_fake_A, repackage(encoded_real_B))
+        else:
+            fake_A = generator(real_B)
         pred_fake = discriminator(fake_A, real_B)
         loss_GAN = criterion_GAN(pred_fake, valid)
         loss_trans = criterion_translation(fake_A, real_A)
 
         # Total loss
         loss_G = loss_GAN + lambda_trans * loss_trans
+
+        if opt.generator_type == 'unet':
+            loss_G += lambda_const * loss_const
 
         loss_G.backward()
 
@@ -163,6 +177,37 @@ for epoch in range(opt.epoch, opt.n_epochs):
                    images={'real_B': real_B,
                            'fake_A': fake_A, 'real_A': real_A},
                    epoch=epoch, batch=i)
+
+    # # ------------------
+    # #  Train Generators with Unlabelled Characters
+    # # ------------------
+
+    # #if epoch > opt.n_epochs // 10 * 7:
+    # if loss_D.data[0] < 0.1:
+    #     print('     ', loss_D.data[0])
+    #     #generator.eval()
+    #     optimizer_G.zero_grad()
+
+    #     real_B_tmp = Variable(source_val_sample).cuda()
+
+    #     # GAN loss
+    #     if opt.generator_type == 'unet':
+    #         fake_A_tmp, encoded_real_B_tmp = generator(real_B_tmp, return_encoded=True)
+    #         _, encoded_fake_A_tmp = generator(fake_A_tmp, return_encoded=True)
+    #         loss_const = criterion_translation(encoded_fake_A_tmp, repackage(encoded_real_B_tmp))
+    #     else:
+    #         fake_A_tmp = generator(real_B_tmp)
+    #     pred_fake_tmp = discriminator(fake_A_tmp, real_B_tmp)
+    #     loss_GAN = criterion_GAN(pred_fake_tmp, Variable(Tensor(np.ones((5, 1, patch_h, patch_w))), requires_grad=False))
+
+    #     if opt.generator_type == 'unet':
+    #         loss_GAN += lambda_const * loss_const
+
+    #     loss_GAN.backward()
+
+    #     optimizer_G.step()
+
+    #     #generator.train()
 
     # Update learning rates
     lr_scheduler_G.step()

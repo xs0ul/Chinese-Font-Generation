@@ -9,14 +9,16 @@ import numpy as np
 
 from torchvision.utils import save_image
 
+
 def tensor2image(tensor):
-    image = 127.5*(tensor[0].cpu().float().numpy() + 1.0)
+    image = 255*(tensor[0].cpu().float().numpy() + 1.0)
     if image.shape[0] == 1:
         image = np.tile(image, (3,1,1))
     return image.astype(np.uint8)
 
+
 class Logger():
-    def __init__(self, n_epochs, batches_epoch, sample_interval, n_samples=5):
+    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, n_samples=5):
         self.n_epochs = n_epochs
         self.batches_epoch = batches_epoch
         self.sample_interval = sample_interval
@@ -26,6 +28,10 @@ class Logger():
         self.losses = {}
         self.n_samples = n_samples
         self.past_images = []
+
+        self.generator = generator
+        self.real_A = real_A
+        self.real_B = real_B
 
     def log(self, losses=None, images=None, epoch=0, batch=0):
         self.mean_period += (time.time() - self.prev_time)
@@ -56,11 +62,26 @@ class Logger():
 
         # If at sample interval save past samples
         if self.batches_done % self.sample_interval == 0 and images is not None:
-            save_image(torch.cat(self.past_images, -1),
+            train_images = torch.cat(self.past_images, 0).cpu()[:5]
+            val_images = generate_and_save_sample(self.generator, self.real_A, self.real_B)
+            save_image(torch.cat([train_images, val_images], -2) + 0.5,
                         './images/%d.png' % self.batches_done,
                         normalize=True)
 
         self.batches_done += 1
+
+
+def generate_and_save_sample(generator, real_A, real_B):
+    # Save image sample
+    fake_A = generator(Variable(real_B).cuda()).cpu().data.view(-1, 1, 128, 128)
+    image_sample = torch.cat((real_B, fake_A, real_A), -2)
+
+    return image_sample
+    # If at sample interval save past samples
+
+    # save_image(image_sample,
+    #             './images/{}.png'.format('test'),
+    #             normalize=True)
 
 
 class ReplayBuffer():
@@ -85,6 +106,7 @@ class ReplayBuffer():
                     to_return.append(element)
         return Variable(torch.cat(to_return))
 
+
 class LambdaLR():
     def __init__(self, n_epochs, offset, decay_start_epoch):
         assert ((n_epochs - decay_start_epoch) > 0), "Decay must start before the training session ends!"
@@ -95,6 +117,7 @@ class LambdaLR():
     def step(self, epoch):
         return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch)/(self.n_epochs - self.decay_start_epoch)
 
+
 def weights_init_normal(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
@@ -102,3 +125,11 @@ def weights_init_normal(m):
     elif classname.find('BatchNorm2d') != -1:
         torch.nn.init.normal(m.weight.data, 1.0, 0.02)
         torch.nn.init.constant(m.bias.data, 0.0)
+
+
+def repackage(h):
+    """Wraps hidden states in new Variables, to detach them from their history."""
+    if type(h) == Variable:
+        return Variable(h.data)
+    else:
+        return tuple(repackage_hidden(v) for v in h)
