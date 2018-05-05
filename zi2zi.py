@@ -21,6 +21,7 @@ import torch
 
 os.makedirs('images', exist_ok=True)
 os.makedirs('saved_models', exist_ok=True)
+os.makedirs('logs', exist_ok=True)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--epoch', type=int, default=0, help='epoch to start training from')
@@ -39,6 +40,7 @@ parser.add_argument('--sample_interval', type=int, default=2000, help='interval 
 parser.add_argument('--checkpoint_interval', type=int, default=-1, help='interval between model checkpoints')
 parser.add_argument('--generator_type', type=str, default='unet', help="'resnet' or 'unet'")
 parser.add_argument('--n_residual_blocks', type=int, default=6, help='number of residual blocks in resnet generator')
+parser.add_argument('--log', type=str, default='log.txt', help='filename of log file')
 opt = parser.parse_args()
 print(opt)
 
@@ -97,11 +99,20 @@ transforms_ = [transforms.ToTensor()]
 
 TRAIN_SIZE = 500
 
-source_font = torch.FloatTensor(np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32)) * 2. - 1.
-target_font = torch.FloatTensor(np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[:TRAIN_SIZE].astype(np.float32)) * 2. - 1.
+source_font_raw = np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+target_font_raw = np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 
-source_val_sample = torch.FloatTensor(np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[2000:2005].astype(np.float32)) * 2. - 1.
-target_val_sample = torch.FloatTensor(np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128)[2000:2005].astype(np.float32)) * 2. - 1.
+# shuffle
+np.random.seed(0)
+shuffled_indices = np.random.permutation(len(source_font_raw))
+source_font_raw = source_font_raw[shuffled_indices]
+target_font_raw = target_font_raw[shuffled_indices]
+
+source_font = torch.FloatTensor(source_font_raw[:TRAIN_SIZE])
+target_font = torch.FloatTensor(target_font_raw[:TRAIN_SIZE])
+
+source_val_sample = torch.FloatTensor(source_font_raw)[2000:2005]
+target_val_sample = torch.FloatTensor(target_font_raw)[2000:2005]
 
 dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
                         batch_size=opt.batch_size, shuffle=True,
@@ -109,7 +120,7 @@ dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
 
 
 # Progress logger
-logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample)
+logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 'logs/'+opt.log)
 
 # ----------
 #  Training
@@ -177,37 +188,6 @@ for epoch in range(opt.epoch, opt.n_epochs):
                    images={'real_B': real_B,
                            'fake_A': fake_A, 'real_A': real_A},
                    epoch=epoch, batch=i)
-
-    # # ------------------
-    # #  Train Generators with Unlabelled Characters
-    # # ------------------
-
-    # #if epoch > opt.n_epochs // 10 * 7:
-    # if loss_D.data[0] < 0.1:
-    #     print('     ', loss_D.data[0])
-    #     #generator.eval()
-    #     optimizer_G.zero_grad()
-
-    #     real_B_tmp = Variable(source_val_sample).cuda()
-
-    #     # GAN loss
-    #     if opt.generator_type == 'unet':
-    #         fake_A_tmp, encoded_real_B_tmp = generator(real_B_tmp, return_encoded=True)
-    #         _, encoded_fake_A_tmp = generator(fake_A_tmp, return_encoded=True)
-    #         loss_const = criterion_translation(encoded_fake_A_tmp, repackage(encoded_real_B_tmp))
-    #     else:
-    #         fake_A_tmp = generator(real_B_tmp)
-    #     pred_fake_tmp = discriminator(fake_A_tmp, real_B_tmp)
-    #     loss_GAN = criterion_GAN(pred_fake_tmp, Variable(Tensor(np.ones((5, 1, patch_h, patch_w))), requires_grad=False))
-
-    #     if opt.generator_type == 'unet':
-    #         loss_GAN += lambda_const * loss_const
-
-    #     loss_GAN.backward()
-
-    #     optimizer_G.step()
-
-    #     #generator.train()
 
     # Update learning rates
     lr_scheduler_G.step()

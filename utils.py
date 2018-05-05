@@ -18,7 +18,7 @@ def tensor2image(tensor):
 
 
 class Logger():
-    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, n_samples=5):
+    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, out_file, n_samples=5):
         self.n_epochs = n_epochs
         self.batches_epoch = batches_epoch
         self.sample_interval = sample_interval
@@ -29,6 +29,7 @@ class Logger():
         self.n_samples = n_samples
         self.past_images = []
 
+        self.out_file = out_file
         self.generator = generator
         self.real_A = real_A
         self.real_B = real_B
@@ -41,6 +42,8 @@ class Logger():
         batch += 1
 
         sys.stdout.write('\rEpoch %03d/%03d [%04d/%04d] -- ' % (epoch, self.n_epochs, batch, self.batches_epoch))
+        f = open(self.out_file, 'a')
+        f.write('\rEpoch %03d/%03d [%04d/%04d] -- ' % (epoch, self.n_epochs, batch, self.batches_epoch))
 
         for i, loss_name in enumerate(losses.keys()):
             if loss_name not in self.losses:
@@ -49,7 +52,10 @@ class Logger():
             self.losses[loss_name] += losses[loss_name].data[0]
 
             sys.stdout.write('%s: %.4f | ' % (loss_name, self.losses[loss_name]/self.batches_done))
+            f.write('%s: %.4f | ' % (loss_name, self.losses[loss_name]/self.batches_done))
 
+        f.write('\n')
+        f.close()
         batches_left = self.batches_epoch*(self.n_epochs - epoch) + self.batches_epoch - batch
         sys.stdout.write('ETA: %s' % (datetime.timedelta(seconds=batches_left*self.mean_period/self.batches_done)))
 
