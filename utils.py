@@ -18,7 +18,8 @@ def tensor2image(tensor):
 
 
 class Logger():
-    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, out_file, n_samples=5):
+    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, out_file, 
+                 image_path_name, n_samples=5):
         self.n_epochs = n_epochs
         self.batches_epoch = batches_epoch
         self.sample_interval = sample_interval
@@ -31,6 +32,7 @@ class Logger():
 
         self.out_file = out_file
         self.generator = generator
+        self.image_path_name = image_path_name
         self.real_A = real_A
         self.real_B = real_B
 
@@ -70,7 +72,7 @@ class Logger():
             train_images = torch.cat(self.past_images, 0).cpu()[:5]
             val_images = generate_and_save_sample(self.generator, self.real_A, self.real_B)
             save_image(torch.cat([train_images, val_images], -2) + 0.5,
-                        './images/%d.png' % self.batches_done,
+                        './'+str(self.image_path_name)+'/%d.png' % self.batches_done,
                         normalize=True)
 
         self.batches_done += 1

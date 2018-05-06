@@ -19,7 +19,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-os.makedirs('images', exist_ok=True)
 os.makedirs('saved_models', exist_ok=True)
 os.makedirs('logs', exist_ok=True)
 
@@ -44,6 +43,9 @@ parser.add_argument('--log', type=str, default='', help='filename of log file')
 parser.add_argument('--train_size', type=int, default=100, help='number of training samples')
 opt = parser.parse_args()
 print(opt)
+
+image_path_name = '{}_{}'.format(opt.generator_type, opt.train_size)
+os.makedirs(image_path_name, exist_ok=True)
 
 # Loss functions
 criterion_GAN = torch.nn.MSELoss()
@@ -101,8 +103,8 @@ transforms_ = [transforms.ToTensor()]
 
 TRAIN_SIZE = opt.train_size
 
-source_font_raw = np.fromfile('./data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
-target_font_raw = np.fromfile('./data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+source_font_raw = np.fromfile('../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+target_font_raw = np.fromfile('../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 
 # shuffle
 np.random.seed(0)
@@ -133,7 +135,8 @@ else:
     LOG_NAME = opt.log
 
 # Progress logger
-logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 'logs/'+LOG_NAME)
+logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 
+         'logs/'+LOG_NAME, image_path_name)
 
 # ----------
 #  Training
