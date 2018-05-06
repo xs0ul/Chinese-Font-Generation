@@ -27,7 +27,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--epoch', type=int, default=0, help='epoch to start training from')
 parser.add_argument('--n_epochs', type=int, default=200, help='number of epochs of training')
 parser.add_argument('--dataset_name', type=str, default="font", help='name of the dataset')
-parser.add_argument('--batch_size', type=int, default=1, help='size of the batches')
+parser.add_argument('--batch_size', type=int, default=16, help='size of the batches')
 parser.add_argument('--lr', type=float, default=0.0002, help='adam: learning rate')
 parser.add_argument('--b1', type=float, default=0.5, help='adam: decay of first order momentum of gradient')
 parser.add_argument('--b2', type=float, default=0.999, help='adam: decay of first order momentum of gradient')
@@ -40,7 +40,8 @@ parser.add_argument('--sample_interval', type=int, default=2000, help='interval 
 parser.add_argument('--checkpoint_interval', type=int, default=-1, help='interval between model checkpoints')
 parser.add_argument('--generator_type', type=str, default='unet', help="'resnet' or 'unet'")
 parser.add_argument('--n_residual_blocks', type=int, default=6, help='number of residual blocks in resnet generator')
-parser.add_argument('--log', type=str, default='log.txt', help='filename of log file')
+parser.add_argument('--log', type=str, default='', help='filename of log file')
+parser.add_argument('--train_size', type=int, default=100, help='number of training samples')
 opt = parser.parse_args()
 print(opt)
 
@@ -90,6 +91,7 @@ lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optimizer_D, lr_lambda=Lambda
 Tensor = torch.cuda.FloatTensor if cuda else torch.Tensor
 input_A = Tensor(opt.batch_size, opt.channels, opt.img_height, opt.img_width)
 input_B = Tensor(opt.batch_size, opt.channels, opt.img_height, opt.img_width)
+
 # Adversarial ground truths
 valid = Variable(Tensor(np.ones(patch)), requires_grad=False)
 fake = Variable(Tensor(np.zeros(patch)), requires_grad=False)
@@ -97,10 +99,10 @@ fake = Variable(Tensor(np.zeros(patch)), requires_grad=False)
 # Dataset loader
 transforms_ = [transforms.ToTensor()]
 
-TRAIN_SIZE = 500
+TRAIN_SIZE = opt.train_size
 
-source_font_raw = np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
-target_font_raw = np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+source_font_raw = np.fromfile('./data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+target_font_raw = np.fromfile('./data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 
 # shuffle
 np.random.seed(0)
@@ -114,13 +116,24 @@ target_font = torch.FloatTensor(target_font_raw[:TRAIN_SIZE])
 source_val_sample = torch.FloatTensor(source_font_raw)[2000:2005]
 target_val_sample = torch.FloatTensor(target_font_raw)[2000:2005]
 
+source_font_val = torch.FloatTensor(source_font_raw)[2000:3000]
+target_font_val = torch.FloatTensor(target_font_raw)[2000:3000]
+
 dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
                         batch_size=opt.batch_size, shuffle=True,
                         drop_last=True)
 
+dataloader_val = DataLoader(FontDataset(x=source_font_val, y=target_font_val),
+                            batch_size=opt.batch_size, shuffle=False,
+                            drop_last=True)
+
+if not opt.log:
+    LOG_NAME = '{}_{}.log'.format(opt.generator_type, opt.train_size)
+else:
+    LOG_NAME = opt.log
 
 # Progress logger
-logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 'logs/'+opt.log)
+logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 'logs/'+LOG_NAME)
 
 # ----------
 #  Training
@@ -188,6 +201,9 @@ for epoch in range(opt.epoch, opt.n_epochs):
                    images={'real_B': real_B,
                            'fake_A': fake_A, 'real_A': real_A},
                    epoch=epoch, batch=i)
+
+    loss_val = eval(generator, dataloader_val, criterion_translation)
+    logger.log_val(loss_val)
 
     # Update learning rates
     lr_scheduler_G.step()
