@@ -51,8 +51,8 @@ criterion_translation = torch.nn.L1Loss()
 cuda = True if torch.cuda.is_available() else False
 
 # Calculate output of image discriminator (PatchGAN)
-patch_h, patch_w = int(opt.img_height / 2**4), int(opt.img_width / 2**4)
-patch = (opt.batch_size, 1, patch_h, patch_w)
+patch_h, patch_w = int(opt.img_height / 2**4), int(opt.img_width / 2**4)  # what does this mean?
+patch = (opt.batch_size, 1, patch_h, patch_w)  # why one
 
 # Initialize generator and discriminator
 generator = GeneratorResNet(in_channels=1, out_channels=1, resblocks=opt.n_residual_blocks) if opt.generator_type == 'resnet' else GeneratorUNet(in_channels=1, out_channels=1)
@@ -66,7 +66,7 @@ if cuda:
     criterion_translation.cuda()
 
 if opt.epoch != 0:
-    # Load pretrained models
+    # Load pretrained models. WHERE is it??
     generator.load_state_dict(torch.load('saved_models/generator_%d.pth'))
     discriminator.load_state_dict(torch.load('saved_models/discriminator_%d.pth'))
 else:
@@ -101,6 +101,8 @@ TRAIN_SIZE = 500
 
 source_font_raw = np.fromfile('../../data/kai_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 target_font_raw = np.fromfile('../../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
+# why times 2 minus 1
+
 
 # shuffle
 np.random.seed(0)
