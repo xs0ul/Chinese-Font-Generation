@@ -3,6 +3,7 @@ import os
 import numpy as np
 import math
 import itertools
+import time
 
 import torchvision.transforms as transforms
 from torchvision.utils import save_image
@@ -112,14 +113,19 @@ shuffled_indices = np.random.permutation(len(source_font_raw))
 source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
-source_font = torch.FloatTensor(source_font_raw[:TRAIN_SIZE])
-target_font = torch.FloatTensor(target_font_raw[:TRAIN_SIZE])
+source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
+target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 
-source_val_sample = torch.FloatTensor(source_font_raw)[2000:2005]
-target_val_sample = torch.FloatTensor(target_font_raw)[2000:2005]
+source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
+target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
 
-source_font_val = torch.FloatTensor(source_font_raw)[2000:3000]
-target_font_val = torch.FloatTensor(target_font_raw)[2000:3000]
+np.random.seed(int(time.time()))
+shuffled_indices = np.random.permutation(2000)[:TRAIN_SIZE]
+source_font = torch.FloatTensor(source_font_raw[shuffled_indices])
+target_font = torch.FloatTensor(target_font_raw[shuffled_indices])
+
+# data aug here
+# source_font, target_font = data_aug(source_font, target_font)
 
 dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
                         batch_size=opt.batch_size, shuffle=True,
