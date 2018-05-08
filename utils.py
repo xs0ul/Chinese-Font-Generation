@@ -18,7 +18,8 @@ def tensor2image(tensor):
 
 
 class Logger():
-    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, out_file, n_samples=5):
+    def __init__(self, n_epochs, batches_epoch, sample_interval, generator, real_A, real_B, out_file, 
+                 image_path_name, n_samples=5):
         self.n_epochs = n_epochs
         self.batches_epoch = batches_epoch
         self.sample_interval = sample_interval
@@ -31,6 +32,7 @@ class Logger():
 
         self.out_file = out_file
         self.generator = generator
+        self.image_path_name = image_path_name
         self.real_A = real_A
         self.real_B = real_B
 
@@ -65,16 +67,20 @@ class Logger():
         if len(self.past_images) > self.n_samples:
             self.past_images.pop(0)
 
-
         # If at sample interval save past samples
         if self.batches_done % self.sample_interval == 0 and images is not None:
             train_images = torch.cat(self.past_images, 0).cpu()[:5]
             val_images = generate_and_save_sample(self.generator, self.real_A, self.real_B)
             save_image(torch.cat([train_images, val_images], -2) + 0.5,
-                        './images/%d.png' % self.batches_done,
+                        './'+str(self.image_path_name)+'/%d.png' % self.batches_done,
                         normalize=True)
 
         self.batches_done += 1
+
+    def log_val(self, loss):
+        with open(self.out_file, 'a') as f:
+            print('\nvalidation loss: {}'.format(loss))
+            f.write('validation loss: {}\n'.format(loss))
 
 
 def generate_and_save_sample(generator, real_A, real_B):
@@ -139,3 +145,22 @@ def repackage(h):
         return Variable(h.data)
     else:
         return tuple(repackage_hidden(v) for v in h)
+
+
+def eval(generator, dataloader_val, criterion_translation):
+    generator.eval()
+
+    losses = []
+    for i, batch in enumerate(dataloader_val):
+        real_A = Variable(batch['A'].cuda())
+        real_B = Variable(batch['B'].cuda())
+
+        fake_A = generator(real_B)
+
+        loss_trans = criterion_translation(fake_A, real_A)
+
+        losses.append(loss_trans.cpu().data[0])
+
+    generator.train()
+
+    return np.mean(losses)
