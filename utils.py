@@ -8,6 +8,7 @@ import torch
 import numpy as np
 
 from torchvision.utils import save_image
+from scipy import ndimage
 
 
 def tensor2image(tensor):
@@ -170,6 +171,8 @@ def eval(generator, dataloader_val, criterion_translation):
 #           Data Augmentation
 ##############################
 
+# TODO: when apply randomness, pay attention that some functions are for images some are for single image
+
 def flip_leftright(img):
     """flip the image and exchange left and right"""
     return np.flip(img, 3)
@@ -178,17 +181,44 @@ def flip_updown(img):
     """flip the image and exchange left and right"""
     return np.flip(img, 2)
 
-def GuassianBlur(img, sigma=0.2):
+def GuassianBlur(img, sigma):
     """Blur the image"""
-    num_images = img.shape[0]
+    img_new = img.copy()
+    num_images = img_new.shape[0]
     for i in range(num_images):
-        img[i] = ndimage.gaussian_filter(img[i], sig)
-    return img
+        img_new[i] = ndimage.gaussian_filter(img_new[i], sigma)  # here doesn't differentiate chanels
+    return img_new
 
 def multiply(img, constant):
     """this is to multiply pixels in image with a constant number, this will make the photo brighter or darker"""
     return img*constant
 
+
+def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
+    img_new = img.copy()
+    num_images = img.shape[0]
+    x_width = img.shape[2]  # as the data we have has four dimensions
+    y_height = img.shape[3]
+    zeros = np.zeros((x_width, y_height))
+
+    if None in [x_lr, x_up, y_lr, y_up]:
+        #TODO: change the seed or it wouldn't work here
+        x_lr, y_lr = np.random.randint(0, x_width), np.random.randint(0, y_height)
+        x_up, y_up = np.random.randint(x_lr, x_width + 1), np.random.randint(y_lr, y_height + 1)
+
+  # TODO: or change it to another color, or some random color, i.e. not use np.zeros
+  # if change to colorful picture, need to remove the [0] after [i], slice three dimensions at the same time
+    for i in range(num_images):
+        img_temp = zeros.copy()
+        img_temp[x_lr: x_up+1, y_lr: y_up+1] = img_new[i][0][x_lr: x_up+1,y_lr: y_up+1]
+        img_new[i][0] = img_temp
+    return img_new
+
+def expand(img):
+    """zoom"""
+
+def rotate(img):
+    pass
 
 # TODO: change numpy function to tensors, should try like tensor stack, or change the position of tensors
 def data_aug(mode, source_font, target_font, randomness=False):
@@ -196,30 +226,30 @@ def data_aug(mode, source_font, target_font, randomness=False):
         source_font_temp = flip_leftright(source_font)
         target_font_temp = flip_leftright(target_font)
 
-        source_font = np.vstack([source_font, source_font_temp])
-        target_font = np.vstack([target_font,target_font_temp])
-
     elif mode == 'flipupdown':
-        source_font = flip_updown(source_font)
-        target_font = flip_updown(target_font)   
-
-        source_font = np.vstack([source_font, source_font_temp])
-        target_font = np.vstack([target_font,target_font_temp])
+        source_font_temp = flip_updown(source_font)
+        target_font_temp = flip_updown(target_font)   
 
     elif mode == 'GuassianBlur':
-        source_font = GuassianBlur(source_font)
-        target_font = GuassianBlur(target_font)   
-
-        source_font = np.vstack([source_font, source_font_temp])
-        target_font = np.vstack([target_font,target_font_temp])
+        source_font_temp = GuassianBlur(source_font)
+        target_font_temp = GuassianBlur(target_font)   
 
     elif mode == 'multiply':
-        source_font = multiply(source_font)
-        target_font = multiply(target_font)   
+        source_font_temp = multiply(source_font)
+        target_font_temp = multiply(target_font)   
 
-        source_font = np.vstack([source_font, source_font_temp])
-        target_font = np.vstack([target_font,target_font_temp])
+    elif mode == 'crop':
+        source_font_temp = crop(source_font)
+        target_font_temp = crop(target_font)   
 
-    elif mode == ''
+    elif mode == 'rotation':
+        source_font_temp = rotate(source_font)
+        target_font_temp = rotate(target_font)   
+
     else:
         pass
+
+    source_font = np.vstack([source_font, source_font_temp])
+    target_font = np.vstack([target_font,target_font_temp])
+
+    return source_font, target_font

@@ -46,9 +46,6 @@ parser.add_argument('--augmentation', type=str, default='Noop',help='different m
 opt = parser.parse_args()
 print(opt)
 
-image_path_name = '{}_{}'.format(opt.generator_type, opt.train_size)
-os.makedirs(image_path_name, exist_ok=True)
-
 # Loss functions
 criterion_GAN = torch.nn.MSELoss()
 criterion_translation = torch.nn.L1Loss()
@@ -109,8 +106,7 @@ source_font_raw = np.fromfile('../data/kai_128.np', dtype=np.int64).reshape(-1, 
 target_font_raw = np.fromfile('../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 
 # shuffle
-np.random.seed(0)
-shuffled_indices = np.random.permutation(len(source_font_raw))
+shuffled_indices = np.random.permutation(len(source_font_raw), seed=0)
 source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
@@ -120,7 +116,7 @@ target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
 target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
 
-np.random.seed(int(time.time()))
+
 shuffled_indices = np.random.permutation(2000)[:TRAIN_SIZE]
 
 # process for data augmentation
@@ -131,6 +127,9 @@ else:
 # assert the length is double or whatever, if no randomness here
 # TODO: get the seed within the function, cuz I need it when apply random operation
 # TODO: add parameters here to control if apply randomness augmentation
+
+image_path_name = '{}_{}_{}'.format(opt.generator_type, opt.train_size, opt.augmentation)
+os.makedirs(image_path_name, exist_ok=True)
 
 
 source_font = torch.FloatTensor(source_font_raw[shuffled_indices])
@@ -154,7 +153,7 @@ dataloader_val = DataLoader(FontDataset(x=source_font_val, y=target_font_val),
                             drop_last=True)
 
 if not opt.log:
-    LOG_NAME = '{}_{}.log'.format(opt.generator_type, opt.train_size)
+    LOG_NAME = '{}_{}_{}.log'.format(opt.generator_type, opt.train_size, opt.augmentation)
 else:
     LOG_NAME = opt.log
 
