@@ -111,17 +111,15 @@ shuffled_indices = np.random.RandomState(seed=0).permutation(len(source_font_raw
 source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
-source_font = source_font_raw[shuffled_indices]
-target_font = target_font_raw[shuffled_indices]
-
 source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
 target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 
 source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
 target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
 
-
 shuffled_indices = np.random.permutation(2000)[:TRAIN_SIZE]
+source_font = source_font_raw[shuffled_indices]
+target_font = target_font_raw[shuffled_indices]
 
 # process for data augmentation
 if opt.augmentation == '':
