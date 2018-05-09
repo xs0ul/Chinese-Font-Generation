@@ -122,28 +122,22 @@ target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
 
 np.random.seed(int(time.time()))
 shuffled_indices = np.random.permutation(2000)[:TRAIN_SIZE]
+
+# process for data augmentation
+if opt.augmentation == '':
+    pass
+else:
+    source_font, target_font = data_augmentation(opt.augmentation, source_font, target_font)
+# assert the length is double or whatever, if no randomness here
+# TODO: get the seed within the function, cuz I need it when apply random operation
+# TODO: add parameters here to control if apply randomness augmentation
+
+
 source_font = torch.FloatTensor(source_font_raw[shuffled_indices])
 target_font = torch.FloatTensor(target_font_raw[shuffled_indices])
 
 
-# process for data augmentation
 
-if opt.augmentation == '':
-    pass
-elif opt.augmentation == 'flipleftright':
-    source_font_temp = flip_leftright(source_font)
-    target_font_temp = flip_leftright(target_font)
-
-    source_font = np.vstack([source_font, source_font_temp])
-    target_font = np.vstack([target_font,target_font_temp])
-elif opt.augmentation == 'flipupdown':
-    source_font = flip_updown(source_font)
-    target_font = flip_updown(target_font)   
-
-    source_font = np.vstack([source_font, source_font_temp])
-    target_font = np.vstack([target_font,target_font_temp])
-else:
-    pass
 
 dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
                         batch_size=opt.batch_size, shuffle=True,

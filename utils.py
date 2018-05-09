@@ -177,3 +177,49 @@ def flip_leftright(img):
 def flip_updown(img):
     """flip the image and exchange left and right"""
     return np.flip(img, 2)
+
+def GuassianBlur(img, sigma=0.2):
+    """Blur the image"""
+    num_images = img.shape[0]
+    for i in range(num_images):
+        img[i] = ndimage.gaussian_filter(img[i], sig)
+    return img
+
+def multiply(img, constant):
+    """this is to multiply pixels in image with a constant number, this will make the photo brighter or darker"""
+    return img*constant
+
+
+# TODO: change numpy function to tensors, should try like tensor stack, or change the position of tensors
+def data_aug(mode, source_font, target_font, randomness=False):
+    if mode == 'flipleftright':
+        source_font_temp = flip_leftright(source_font)
+        target_font_temp = flip_leftright(target_font)
+
+        source_font = np.vstack([source_font, source_font_temp])
+        target_font = np.vstack([target_font,target_font_temp])
+
+    elif mode == 'flipupdown':
+        source_font = flip_updown(source_font)
+        target_font = flip_updown(target_font)   
+
+        source_font = np.vstack([source_font, source_font_temp])
+        target_font = np.vstack([target_font,target_font_temp])
+
+    elif mode == 'GuassianBlur':
+        source_font = GuassianBlur(source_font)
+        target_font = GuassianBlur(target_font)   
+
+        source_font = np.vstack([source_font, source_font_temp])
+        target_font = np.vstack([target_font,target_font_temp])
+
+    elif mode == 'multiply':
+        source_font = multiply(source_font)
+        target_font = multiply(target_font)   
+
+        source_font = np.vstack([source_font, source_font_temp])
+        target_font = np.vstack([target_font,target_font_temp])
+
+    elif mode == ''
+    else:
+        pass
