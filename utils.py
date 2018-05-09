@@ -164,3 +164,16 @@ def eval(generator, dataloader_val, criterion_translation):
     generator.train()
 
     return np.mean(losses)
+
+
+##############################
+#           Data Augmentation
+##############################
+
+def flip_leftright(img):
+    """flip the image and exchange left and right"""
+    return np.flip(img, 3)
+
+def flip_updown(img):
+    """flip the image and exchange left and right"""
+    return np.flip(img, 2)
