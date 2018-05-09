@@ -111,6 +111,9 @@ shuffled_indices = np.random.RandomState(seed=0).permutation(len(source_font_raw
 source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
+source_font = source_font_raw[shuffled_indices]
+target_font = target_font_raw[shuffled_indices]
+
 source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
 target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 
@@ -133,8 +136,8 @@ image_path_name = '{}_{}_{}'.format(opt.generator_type, opt.train_size, opt.augm
 os.makedirs(image_path_name, exist_ok=True)
 
 
-source_font = torch.FloatTensor(source_font_raw[shuffled_indices])
-target_font = torch.FloatTensor(target_font_raw[shuffled_indices])
+source_font = torch.FloatTensor(source_font)
+target_font = torch.FloatTensor(target_font)
 
 
 
