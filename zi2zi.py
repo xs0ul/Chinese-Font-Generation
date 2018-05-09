@@ -106,7 +106,8 @@ source_font_raw = np.fromfile('../data/kai_128.np', dtype=np.int64).reshape(-1, 
 target_font_raw = np.fromfile('../data/hwxw_128.np', dtype=np.int64).reshape(-1, 1, 128, 128).astype(np.float32) * 2. - 1.
 
 # shuffle
-shuffled_indices = np.random.permutation(len(source_font_raw), seed=0)
+shuffled_indices = np.random.RandomState(seed=0).permutation(len(source_font_raw))
+#shuffled_indices = np.random.permutation(len(source_font_raw), seed=0)
 source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
