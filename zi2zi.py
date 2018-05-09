@@ -131,11 +131,17 @@ target_font = torch.FloatTensor(target_font_raw[shuffled_indices])
 if opt.augmentation == '':
     pass
 elif opt.augmentation == 'flipleftright':
-    source_font = flip_leftright(source_font)
-    target_font = flip_leftright(target_font)
+    source_font_temp = flip_leftright(source_font)
+    target_font_temp = flip_leftright(target_font)
+
+    source_font = np.vstack([source_font, source_font_temp])
+    target_font = np.vstack([target_font,target_font_temp])
 elif opt.augmentation == 'flipupdown':
     source_font = flip_updown(source_font)
     target_font = flip_updown(target_font)   
+
+    source_font = np.vstack([source_font, source_font_temp])
+    target_font = np.vstack([target_font,target_font_temp])
 else:
     pass
 
