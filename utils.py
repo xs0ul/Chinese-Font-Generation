@@ -221,7 +221,7 @@ def rotate(img):
     pass
 
 # TODO: change numpy function to tensors, should try like tensor stack, or change the position of tensors
-def data_aug(mode, source_font, target_font, randomness=False):
+def data_augmentation(mode, source_font, target_font, randomness=False):
     if mode == 'flipleftright':
         source_font_temp = flip_leftright(source_font)
         target_font_temp = flip_leftright(target_font)
