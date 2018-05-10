@@ -165,7 +165,7 @@ logger = Logger(opt.n_epochs, len(source_font), opt.sample_interval, generator, 
 for epoch in range(opt.epoch, opt.n_epochs):
     # process for data augmentation
     if opt.augmentation == '':
-        pass
+        source_font_tmp, target_font_tmp = source_font.copy(), target_font.copy()
     else:
         aug = np.random.choice(aug_list)
         source_font_tmp, target_font_tmp = data_augmentation(aug, source_font.copy(), target_font.copy())
