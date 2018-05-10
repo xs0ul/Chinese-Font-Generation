@@ -3,3 +3,4 @@ data/
 __pycache__/
 images/
 run.sh
+saved_models/
