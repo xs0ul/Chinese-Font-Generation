@@ -199,7 +199,7 @@ def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
     num_images = img.shape[0]
     x_width = img.shape[2]  # as the data we have has four dimensions
     y_height = img.shape[3]
-    zeros = np.zeros((x_width, y_height))
+    background = np.ones((x_width, y_height), dtype=np.float32)
 
     if None in [x_lr, x_up, y_lr, y_up]:
         #TODO: change the seed or it wouldn't work here
@@ -209,10 +209,24 @@ def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
   # TODO: or change it to another color, or some random color, i.e. not use np.zeros
   # if change to colorful picture, need to remove the [0] after [i], slice three dimensions at the same time
     for i in range(num_images):
-        img_temp = zeros.copy()
+        img_temp = background.copy()
         img_temp[x_lr: x_up+1, y_lr: y_up+1] = img_new[i][0][x_lr: x_up+1,y_lr: y_up+1]
         img_new[i][0] = img_temp
     return img_new
+
+
+def shift(source, target):
+    num_images, _, x_width, y_height = source.shape
+    shifted_source = np.ones((num_images, 1, x_width, y_height), dtype=np.float32)
+    shifted_target = np.ones((num_images, 1, x_width, y_height), dtype=np.float32)
+
+    shift_xs, shift_ys = np.random.randint(-8, 8, size=num_images), np.random.randint(-8, 8, size=num_images)
+    for i, (shift_x, shift_y) in enumerate(zip(shift_xs, shift_ys)):
+        shifted_source[i, 0] = np.roll(source[i, 0], (shift_x, shift_y), axis=(0, 1))
+        shifted_target[i, 0] = np.roll(target[i, 0], (shift_x, shift_y), axis=(0, 1))
+
+    return shifted_source, shifted_target
+
 
 def expand(img):
     pass
@@ -229,28 +243,31 @@ def data_augmentation(mode, source_font, target_font, randomness=False):
 
     elif mode == 'flipupdown':
         source_font_temp = flip_updown(source_font)
-        target_font_temp = flip_updown(target_font)   
+        target_font_temp = flip_updown(target_font)
 
     elif mode == 'GaussianBlur':
         source_font_temp = GaussianBlur(source_font, 2)
-        target_font_temp = GaussianBlur(target_font, 2)   
+        target_font_temp = GaussianBlur(target_font, 2)
 
     elif mode == 'multiply':
         source_font_temp = multiply(source_font, 2)
-        target_font_temp = multiply(target_font, 2)   
+        target_font_temp = multiply(target_font, 2)
 
     elif mode == 'crop':
         source_font_temp = crop(source_font)
-        target_font_temp = crop(target_font)   
+        target_font_temp = crop(target_font)
 
     elif mode == 'rotation':
         source_font_temp = rotate(source_font)
-        target_font_temp = rotate(target_font)   
+        target_font_temp = rotate(target_font)
+
+    elif mode == 'shift':
+        source_font_temp, target_font_temp = shift(source_font, target_font)
 
     else:
         pass
 
     source_font = np.vstack([source_font, source_font_temp])
-    target_font = np.vstack([target_font,target_font_temp])
+    target_font = np.vstack([target_font, target_font_temp])
 
     return source_font, target_font
