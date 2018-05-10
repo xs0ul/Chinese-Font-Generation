@@ -75,8 +75,8 @@ if cuda:
 
 if opt.epoch != 0:
     # Load pretrained models
-    generator.load_state_dict(torch.load('saved_models/generator_{}.pth').format(opt.epoch))
-    discriminator.load_state_dict(torch.load('saved_models/discriminator_{}.pth').format(opt.epoch))
+    generator.load_state_dict(torch.load('saved_models/generator_{}.pth'.format(opt.epoch)))
+    discriminator.load_state_dict(torch.load('saved_models/discriminator_{}.pth'.format(opt.epoch)))
 else:
     # Initialize weights
     generator.apply(weights_init_normal)
