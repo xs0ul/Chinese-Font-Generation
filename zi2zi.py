@@ -42,7 +42,12 @@ parser.add_argument('--generator_type', type=str, default='unet', help="'resnet'
 parser.add_argument('--n_residual_blocks', type=int, default=6, help='number of residual blocks in resnet generator')
 parser.add_argument('--log', type=str, default='', help='filename of log file')
 parser.add_argument('--train_size', type=int, default=100, help='number of training samples')
-parser.add_argument('--augmentation', type=str, default='Noop',help='different methods for data augmentation')
+parser.add_argument('--augmentation', type=str, default='', help='different methods for data augmentation')
+parser.add_argument('--aug_flr', action='store_true', help='flip left-right')
+parser.add_argument('--aug_fud', action='store_true', help='flip up-down')
+parser.add_argument('--aug_gb', action='store_true', help='gaussian blur')
+parser.add_argument('--aug_crop', action='store_true', help='random crop')
+parser.add_argument('--aug_rot', action='store_true', help='rotate')
 opt = parser.parse_args()
 print(opt)
 
@@ -108,7 +113,7 @@ target_font_raw = np.fromfile('../data/hwxw_128.np', dtype=np.int64).reshape(-1,
 # shuffle
 shuffled_indices = np.random.RandomState(seed=0).permutation(len(source_font_raw))
 #shuffled_indices = np.random.permutation(len(source_font_raw), seed=0)
-source_font_raw = source_font_raw[shuffled_indices]	
+source_font_raw = source_font_raw[shuffled_indices]
 target_font_raw = target_font_raw[shuffled_indices]
 
 source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
@@ -121,29 +126,25 @@ train_indices = np.random.permutation(2000)[:TRAIN_SIZE]
 source_font = source_font_raw[train_indices]
 target_font = target_font_raw[train_indices]
 
-# process for data augmentation
-if opt.augmentation == '':
-    pass
-else:
-    source_font, target_font = data_augmentation(opt.augmentation, source_font, target_font)
-# assert the length is double or whatever, if no randomness here
-# TODO: get the seed within the function, cuz I need it when apply random operation
-# TODO: add parameters here to control if apply randomness augmentation
+aug_list = []
+if opt.aug_flr:
+    aug_list.append('flipleftright')
+if opt.aug_fup:
+    aug_list.append('flipupdown')
+if opt.aug_gb:
+    aug_list.append('GaussianBlur')
+if opt.aug_crop:
+    aug_list.append('crop')
+if opt.aug_rot:
+    aug_list.append('rotation')
 
-image_path_name = '{}_{}_{}'.format(opt.generator_type, opt.train_size, opt.augmentation)
-os.makedirs(image_path_name, exist_ok=True)
-
-
-source_font = torch.FloatTensor(source_font)
-target_font = torch.FloatTensor(target_font)
-
-dataloader = DataLoader(FontDataset(x=source_font, y=target_font),
-                        batch_size=opt.batch_size, shuffle=True,
-                        drop_last=True)
 
 dataloader_val = DataLoader(FontDataset(x=source_font_val, y=target_font_val),
                             batch_size=opt.batch_size, shuffle=False,
                             drop_last=True)
+
+image_path_name = '{}_{}_{}'.format(opt.generator_type, opt.train_size, opt.augmentation)
+os.makedirs(image_path_name, exist_ok=True)
 
 if not opt.log:
     LOG_NAME = '{}_{}_{}.log'.format(opt.generator_type, opt.train_size, opt.augmentation)
@@ -151,7 +152,7 @@ else:
     LOG_NAME = opt.log
 
 # Progress logger
-logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, target_val_sample, source_val_sample, 
+logger = Logger(opt.n_epochs, len(source_font), opt.sample_interval, generator, target_val_sample, source_val_sample, 
          'logs/'+LOG_NAME, image_path_name)
 
 # ----------
@@ -159,6 +160,23 @@ logger = Logger(opt.n_epochs, len(dataloader), opt.sample_interval, generator, t
 # ----------
 
 for epoch in range(opt.epoch, opt.n_epochs):
+    # process for data augmentation
+    if opt.augmentation == '':
+        pass
+    else:
+        aug = np.random.choice(aug_list)
+        source_font_tmp, target_font_tmp = data_augmentation(aug, source_font.copy(), target_font.copy())
+    # assert the length is double or whatever, if no randomness here
+    # TODO: get the seed within the function, cuz I need it when apply random operation
+    # TODO: add parameters here to control if apply randomness augmentation
+
+    source_font_tmp = torch.FloatTensor(source_font_tmp)
+    target_font_tmp = torch.FloatTensor(target_font_tmp)
+
+    dataloader = DataLoader(FontDataset(x=source_font_tmp, y=target_font_tmp),
+                            batch_size=opt.batch_size, shuffle=True,
+                            drop_last=True)
+
     for i, batch in enumerate(dataloader):
 
         # Set model input
