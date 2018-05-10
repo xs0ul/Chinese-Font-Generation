@@ -108,16 +108,12 @@ target_font_raw = np.fromfile('../data/hwxw_128.np', dtype=np.int64).reshape(-1,
 # shuffle
 shuffled_indices = np.random.RandomState(seed=0).permutation(len(source_font_raw))
 #shuffled_indices = np.random.permutation(len(source_font_raw), seed=0)
-source_font_raw = source_font_raw[shuffled_indices]
-target_font_raw = target_font_raw[shuffled_indices]
-
 
 source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
 target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 
 source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
 target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
-
 
 shuffled_indices = np.random.permutation(2000)[:TRAIN_SIZE]
 source_font = source_font_raw[shuffled_indices]
