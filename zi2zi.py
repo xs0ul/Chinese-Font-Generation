@@ -48,6 +48,7 @@ parser.add_argument('--aug_fud', action='store_true', help='flip up-down')
 parser.add_argument('--aug_gb', action='store_true', help='gaussian blur')
 parser.add_argument('--aug_crop', action='store_true', help='random crop')
 parser.add_argument('--aug_rot', action='store_true', help='rotate')
+parser.add_argument('--aug_sft', action='store_true', help='shift')
 opt = parser.parse_args()
 print(opt)
 
@@ -137,7 +138,7 @@ if opt.aug_crop:
     aug_list.append('crop')
 if opt.aug_rot:
     aug_list.append('rotation')
-if opt.aug_rot:
+if opt.aug_sft:
     aug_list.append('shift')
 
 
