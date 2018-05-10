@@ -215,6 +215,7 @@ def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
     return img_new
 
 def expand(img):
+    pass
     """zoom"""
 
 def rotate(img):
@@ -231,12 +232,12 @@ def data_augmentation(mode, source_font, target_font, randomness=False):
         target_font_temp = flip_updown(target_font)   
 
     elif mode == 'GuassianBlur':
-        source_font_temp = GuassianBlur(source_font)
-        target_font_temp = GuassianBlur(target_font)   
+        source_font_temp = GuassianBlur(source_font, 2)
+        target_font_temp = GuassianBlur(target_font, 2)   
 
     elif mode == 'multiply':
-        source_font_temp = multiply(source_font)
-        target_font_temp = multiply(target_font)   
+        source_font_temp = multiply(source_font, 2)
+        target_font_temp = multiply(target_font, 2)   
 
     elif mode == 'crop':
         source_font_temp = crop(source_font)
