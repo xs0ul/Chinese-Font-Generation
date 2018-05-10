@@ -181,7 +181,7 @@ def flip_updown(img):
     """flip the image and exchange left and right"""
     return np.flip(img, 2)
 
-def GuassianBlur(img, sigma):
+def GaussianBlur(img, sigma):
     """Blur the image"""
     img_new = img.copy()
     num_images = img_new.shape[0]
@@ -231,9 +231,9 @@ def data_augmentation(mode, source_font, target_font, randomness=False):
         source_font_temp = flip_updown(source_font)
         target_font_temp = flip_updown(target_font)   
 
-    elif mode == 'GuassianBlur':
-        source_font_temp = GuassianBlur(source_font, 2)
-        target_font_temp = GuassianBlur(target_font, 2)   
+    elif mode == 'GaussianBlur':
+        source_font_temp = GaussianBlur(source_font, 2)
+        target_font_temp = GaussianBlur(target_font, 2)   
 
     elif mode == 'multiply':
         source_font_temp = multiply(source_font, 2)
