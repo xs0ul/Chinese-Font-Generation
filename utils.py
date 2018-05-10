@@ -199,7 +199,7 @@ def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
     num_images = img.shape[0]
     x_width = img.shape[2]  # as the data we have has four dimensions
     y_height = img.shape[3]
-    background = np.ones((x_width, y_height)) * -1.0
+    background = np.ones((x_width, y_height), dtype=np.float32)
 
     if None in [x_lr, x_up, y_lr, y_up]:
         #TODO: change the seed or it wouldn't work here
@@ -213,6 +213,20 @@ def crop(img, x_lr=None, x_up=None, y_lr=None, y_up=None):
         img_temp[x_lr: x_up+1, y_lr: y_up+1] = img_new[i][0][x_lr: x_up+1,y_lr: y_up+1]
         img_new[i][0] = img_temp
     return img_new
+
+
+def shift(source, target):
+    num_images, _, x_width, y_height = source.shape
+    shifted_source = np.ones((num_images, 1, x_width, y_height), dtype=np.float32)
+    shifted_target = np.ones((num_images, 1, x_width, y_height), dtype=np.float32)
+
+    shift_xs, shift_ys = np.random.randint(-8, 8, size=num_images), np.random.randint(-8, 8, size=num_images)
+    for i, (shift_x, shift_y) in enumerate(zip(shift_xs, shift_ys)):
+        shifted_source[i, 0] = np.roll(source[i, 0], (shift_x, shift_y), axis=(0, 1))
+        shifted_target[i, 0] = np.roll(target[i, 0], (shift_x, shift_y), axis=(0, 1))
+
+    return shifted_source, shifted_target
+
 
 def expand(img):
     pass
@@ -246,6 +260,9 @@ def data_augmentation(mode, source_font, target_font, randomness=False):
     elif mode == 'rotation':
         source_font_temp = rotate(source_font)
         target_font_temp = rotate(target_font)
+
+    elif mode == 'shift':
+        source_font_temp, target_font_temp = shift(source_font, target_font)
 
     else:
         pass

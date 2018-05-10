@@ -137,6 +137,8 @@ if opt.aug_crop:
     aug_list.append('crop')
 if opt.aug_rot:
     aug_list.append('rotation')
+if opt.aug_rot:
+    aug_list.append('shift')
 
 
 dataloader_val = DataLoader(FontDataset(x=source_font_val, y=target_font_val),
