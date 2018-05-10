@@ -129,7 +129,7 @@ target_font = target_font_raw[train_indices]
 aug_list = []
 if opt.aug_flr:
     aug_list.append('flipleftright')
-if opt.aug_fup:
+if opt.aug_fud:
     aug_list.append('flipupdown')
 if opt.aug_gb:
     aug_list.append('GaussianBlur')
