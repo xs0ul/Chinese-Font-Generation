@@ -49,6 +49,7 @@ parser.add_argument('--aug_gb', action='store_true', help='gaussian blur')
 parser.add_argument('--aug_crop', action='store_true', help='random crop')
 parser.add_argument('--aug_rot', action='store_true', help='rotate')
 parser.add_argument('--aug_sft', action='store_true', help='shift')
+parser.add_argument('--ignore_d', action='store_true', help='ignore pretrained discriminator')
 opt = parser.parse_args()
 print(opt)
 
@@ -76,7 +77,8 @@ if cuda:
 if opt.epoch != 0:
     # Load pretrained models
     generator.load_state_dict(torch.load('saved_models/generator_{}.pth'.format(opt.epoch)))
-    discriminator.load_state_dict(torch.load('saved_models/discriminator_{}.pth'.format(opt.epoch)))
+    if not opt.ignore_d:
+        discriminator.load_state_dict(torch.load('saved_models/discriminator_{}.pth'.format(opt.epoch)))
 else:
     # Initialize weights
     generator.apply(weights_init_normal)
