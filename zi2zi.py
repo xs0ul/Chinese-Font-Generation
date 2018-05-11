@@ -50,6 +50,7 @@ parser.add_argument('--aug_crop', action='store_true', help='random crop')
 parser.add_argument('--aug_rot', action='store_true', help='rotate')
 parser.add_argument('--aug_sft', action='store_true', help='shift')
 parser.add_argument('--ignore_d', action='store_true', help='ignore pretrained discriminator')
+parser.add_argument('--baseline', action='store_true', help='don\'t use discriminator')
 opt = parser.parse_args()
 print(opt)
 
@@ -206,7 +207,10 @@ for epoch in range(opt.epoch, opt.n_epochs):
         loss_trans = criterion_translation(fake_A, real_A)
 
         # Total loss
-        loss_G = loss_GAN + lambda_trans * loss_trans
+        if opt.baseline:
+            loss_G = lambda_trans * loss_trans
+        else:
+            loss_G = loss_GAN + lambda_trans * loss_trans
 
         if opt.generator_type == 'unet':
             loss_G += lambda_const * loss_const
@@ -232,8 +236,9 @@ for epoch in range(opt.epoch, opt.n_epochs):
         # Total loss
         loss_D = 0.5 * (loss_real + loss_fake)
 
-        loss_D.backward()
-        optimizer_D.step()
+        if not opt.baseline:
+            loss_D.backward()
+            optimizer_D.step()
 
         # --------------
         #  Log Progress
