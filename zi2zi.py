@@ -51,6 +51,7 @@ parser.add_argument('--aug_rot', action='store_true', help='rotate')
 parser.add_argument('--aug_sft', action='store_true', help='shift')
 parser.add_argument('--ignore_d', action='store_true', help='ignore pretrained discriminator')
 parser.add_argument('--baseline', action='store_true', help='don\'t use discriminator')
+parser.add_argument('--test', action='store_true', help='measure test performance')
 opt = parser.parse_args()
 print(opt)
 
@@ -123,8 +124,12 @@ target_font_raw = target_font_raw[shuffled_indices]
 source_val_sample = torch.FloatTensor(source_font_raw[2000:2005].copy())
 target_val_sample = torch.FloatTensor(target_font_raw[2000:2005].copy())
 
-source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
-target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
+if opt.test:
+    source_font_val = torch.FloatTensor(source_font_raw[3000:].copy())
+    target_font_val = torch.FloatTensor(target_font_raw[3000:].copy())
+else:
+    source_font_val = torch.FloatTensor(source_font_raw[2000:3000].copy())
+    target_font_val = torch.FloatTensor(target_font_raw[2000:3000].copy())
 
 train_indices = np.random.permutation(2000)[:TRAIN_SIZE]
 source_font = source_font_raw[train_indices]
