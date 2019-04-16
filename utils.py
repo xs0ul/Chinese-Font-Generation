@@ -145,7 +145,7 @@ def repackage(h):
     if type(h) == Variable:
         return Variable(h.data)
     else:
-        return tuple(repackage_hidden(v) for v in h)
+        return tuple(repackage(v) for v in h)
 
 
 def eval(generator, dataloader_val, criterion_translation):
